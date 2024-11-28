@@ -2,7 +2,7 @@ import requests
 import os
 import json
 
-BOT_TOKEN = '8046820225:AAHsGMS7vJIg-CbrqfV3MuOK5_N_8zKwI-U'
+BOT_TOKEN = ''
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 def send_message(chat_id, text, photo_url=None, command_buttons=None, inline_button_text=None, inline_button_url=None):

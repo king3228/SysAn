@@ -1,7 +1,7 @@
 import requests
 import os
 
-YANDEX_GPT_API_KEY = 'AQVNxR6U-lsAeo8GVNmOyAbXk83wLjI-Yy_a2aUD'  # Убедитесь в корректности API-ключа
+YANDEX_GPT_API_KEY = ''  # Убедитесь в корректности API-ключа
 
 def send_request_to_gpt(prompt, context):
     """
@@ -51,7 +51,7 @@ def send_request_to_gpt(prompt, context):
     url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Api-Key AQVNxR6U-lsAeo8GVNmOyAbXk83wLjI-Yy_a2aUD"
+        "Authorization": "Api-Key "
     }
 
     try:
