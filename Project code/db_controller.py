@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 
 def connect_db():
-    IAM = 't1.9euelZqWk5DJypqNyZmRyJqJms6emO3rnpWazcrOjo3Nnc3LjpSMkcnJxsjl9PczHVpG-e9vLDfX3fT3c0tXRvnvbyw3183n9euelZqUls_Oi5mLyM-Qi5yKzI-RjO_8xeuelZqUls_Oi5mLyM-Qi5yKzI-RjA._Z4KsjK7PzSiPVOSuExjYOgQ-T5rcFfx2jFbSpmltt6DTnyfffksU4483MtVORBW7tKSqpB5m9sFea09NG-nDw'
+    IAM = ''
     driver_config = ydb.DriverConfig(
         endpoint='grpcs://ydb.serverless.yandexcloud.net:2135',
         database='/ru-central1/b1gsde16rgc0mhkhj1t4/etnjgop9305nqltdo5ob',
