@@ -15,8 +15,8 @@ def get_s3_client():
         service_name='s3',
         endpoint_url='https://storage.yandexcloud.net',
         region_name='ru-central1',
-        aws_access_key_id=os.environ.get('ACCESS_KEY_ID'),
-        aws_secret_access_key=os.environ.get('ACCESS_SECRET_KEY')
+        aws_access_key_id='YCAJE3_PlBKCM9Emup5E_77Rp',
+        aws_secret_access_key='YCMOabAOWt87R43lap8hL3l_QbOrqyxy8L0i6qYE'
     )
 
 def read_table_from_s3_csv(file_key):

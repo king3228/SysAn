@@ -15,8 +15,8 @@ def get_s3_client():
         service_name='s3',
         endpoint_url='https://storage.yandexcloud.net',
         region_name='ru-central1',
-        aws_access_key_id=os.environ.get('ACCESS_KEY_ID'),
-        aws_secret_access_key=os.environ.get('ACCESS_SECRET_KEY')
+        aws_access_key_id='YCAJE3_PlBKCM9Emup5E_77Rp',
+        aws_secret_access_key='YCMOabAOWt87R43lap8hL3l_QbOrqyxy8L0i6qYE'
     )
 
 def read_table_from_s3_csv(file_key):
@@ -79,8 +79,14 @@ def load_user_anime_list(chat_id, user_anime_list):
         # Обработка данных anime
         if (anime_df['anime_id'] == target['id']).any():
             # Обновляем существующее аниме
-            anime_df.loc[anime_df['anime_id'] == target['id'], ['title', 'average_score', 'genres', 'episode_duration', 'episode_count', 'poster_url']] = \
-                [target['name'], target['score'], genres, target['episodes'], target['episodes'], target['poster']['originalUrl']]
+            anime_df.loc[anime_df['anime_id'] == target['id'], ['title', 'average_score', 'genres', 'episode_duration', 'episode_count', 'poster_url']] = [
+                target['name'],
+                target['score'],
+                genres,
+                target['episodes'],
+                target['episodes'],
+                target['poster']['originalUrl']
+            ]
         else:
             # Добавляем новое аниме, если его нет
             new_anime = pd.DataFrame([{
@@ -96,11 +102,13 @@ def load_user_anime_list(chat_id, user_anime_list):
             anime_df = pd.concat([anime_df, new_anime], ignore_index=True)
 
         # Обработка данных пользователя
-        exists_user_anime = ((user_anime_df['chat_id'] == chat_id) & (user_anime_df['anime_id'] == target['id'])).any()
-        if exists_user_anime:
+        if (user_anime_df['chat_id'] == chat_id) & (user_anime_df['anime_id'] == target['id']).any():
             # Обновляем информацию о пользователе для данного аниме
-            user_anime_df.loc[(user_anime_df['chat_id'] == chat_id) & (user_anime_df['anime_id'] == target['id']), ['status', 'user_score']] = \
-                [anime['status'], anime.get('score', 0)]
+            user_anime_df.loc[(user_anime_df['chat_id'] == chat_id) &
+                              (user_anime_df['anime_id'] == target['id']), ['status', 'user_score']] = [
+                anime['status'],
+                anime.get('score', 0)
+            ]
         else:
             # Добавляем новую запись пользователя anime, если её нет
             new_user_anime = pd.DataFrame([{

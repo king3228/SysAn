@@ -15,8 +15,8 @@ def get_s3_client():
         service_name='s3',
         endpoint_url='https://storage.yandexcloud.net',
         region_name='ru-central1',
-        aws_access_key_id=os.environ.get('ACCESS_KEY_ID'),
-        aws_secret_access_key=os.environ.get('ACCESS_SECRET_KEY')
+        aws_access_key_id='YCAJE3_PlBKCM9Emup5E_77Rp',
+        aws_secret_access_key='YCMOabAOWt87R43lap8hL3l_QbOrqyxy8L0i6qYE'
     )
 
 def read_table_from_s3_csv(file_key):
@@ -47,14 +47,8 @@ def check_user_exists(chat_id):
 def add_user(chat_id):
     users_df = read_table_from_s3_csv('users.csv')
     last_updated = get_old_timestamp().isoformat()
-    new_user = pd.DataFrame([{
-        'chat_id': chat_id,
-        'shikimori_username': None,
-        'last_updated': last_updated
-    }])
-
-    # Используем pd.concat вместо append
-    users_df = pd.concat([users_df, new_user], ignore_index=True)
+    new_user = {'chat_id': chat_id, 'shikimori_username': None, 'last_updated': last_updated}
+    users_df = users_df.append(new_user, ignore_index=True)
     write_table_to_s3_csv(users_df, 'users.csv')
 
 def update_last_updated(chat_id):
@@ -75,15 +69,11 @@ def load_user_anime_list(chat_id, user_anime_list):
     for anime in user_anime_list:
         target = anime['anime']
         genres = ', '.join([genre['name'] for genre in target['genres']])
+        user_anime_id = str(uuid.uuid4())
 
-        # Обработка данных anime
-        if (anime_df['anime_id'] == target['id']).any():
-            # Обновляем существующее аниме
-            anime_df.loc[anime_df['anime_id'] == target['id'], ['title', 'average_score', 'genres', 'episode_duration', 'episode_count', 'poster_url']] = \
-                [target['name'], target['score'], genres, target['episodes'], target['episodes'], target['poster']['originalUrl']]
-        else:
-            # Добавляем новое аниме, если его нет
-            new_anime = pd.DataFrame([{
+        if not (anime_df['anime_id'] == target['id']).any():
+            # Adding new anime to anime_df
+            new_anime = {
                 'anime_id': target['id'],
                 'title': target['name'],
                 'average_score': target['score'],
@@ -92,25 +82,19 @@ def load_user_anime_list(chat_id, user_anime_list):
                 'episode_duration': target['episodes'],
                 'episode_count': target['episodes'],
                 'poster_url': target['poster']['originalUrl']
-            }])
-            anime_df = pd.concat([anime_df, new_anime], ignore_index=True)
+            }
+            anime_df = anime_df.append(new_anime, ignore_index=True)
 
-        # Обработка данных пользователя
-        exists_user_anime = ((user_anime_df['chat_id'] == chat_id) & (user_anime_df['anime_id'] == target['id'])).any()
-        if exists_user_anime:
-            # Обновляем информацию о пользователе для данного аниме
-            user_anime_df.loc[(user_anime_df['chat_id'] == chat_id) & (user_anime_df['anime_id'] == target['id']), ['status', 'user_score']] = \
-                [anime['status'], anime.get('score', 0)]
-        else:
-            # Добавляем новую запись пользователя anime, если её нет
-            new_user_anime = pd.DataFrame([{
-                'user_anime_id': str(uuid.uuid4()),
+        if not (user_anime_df['user_anime_id'] == user_anime_id).any():
+            # Adding new user anime log to user_anime_df
+            new_user_anime = {
+                'user_anime_id': user_anime_id,
                 'chat_id': chat_id,
                 'anime_id': target['id'],
                 'status': anime['status'],
                 'user_score': anime.get('score', 0)
-            }])
-            user_anime_df = pd.concat([user_anime_df, new_user_anime], ignore_index=True)
+            }
+            user_anime_df = user_anime_df.append(new_user_anime, ignore_index=True)
 
     write_table_to_s3_csv(anime_df, 'anime.csv')
     write_table_to_s3_csv(user_anime_df, 'user_anime.csv')
@@ -123,34 +107,20 @@ def get_context_data(chat_id):
     user_anime_finished = user_anime_df[
         (user_anime_df['chat_id'] == chat_id) &
         (user_anime_df['status'] == 'finished')
-    ]
+        ]
 
     # Подключение `anime_df` для получения дополнительной информации
     merged_df = pd.merge(user_anime_finished, anime_df, how='inner', on='anime_id')
 
-    # Использование try-except для обработки потенциальных ошибок в векторе `genres`
-    try:
-        all_genres = merged_df['genres'].dropna().str.split(', ').explode()
-        top_genre = all_genres.value_counts().idxmax() if not all_genres.empty else None
-    except Exception:
-        top_genre = None
+    # Определяем `top_genre`
+    all_genres = merged_df['genres'].str.split(', ').explode()
+    top_genre = all_genres.value_counts().idxmax() if not all_genres.empty else None
+    # Определяем `median_episodes`
+    median_episodes = merged_df['episode_count'].median() if not merged_df.empty else None
 
-    # Использование try-except для обработки потенциальных ошибок в медиане
-    try:
-        median_episodes = merged_df['episode_count'].dropna().median() if not merged_df.empty else None
-    except Exception:
-        median_episodes = None
-
-    # Использование try-except для проверки top и bottom titles
-    try:
-        top_titles = merged_df.nlargest(3, 'user_score').dropna(subset=['title'])['title'].tolist() if not merged_df.empty else []
-    except Exception:
-        top_titles = []
-
-    try:
-        bottom_titles = merged_df.nsmallest(3, 'user_score').dropna(subset=['title'])['title'].tolist() if not merged_df.empty else []
-    except Exception:
-        bottom_titles = []
+    # Получаем top и bottom titles
+    top_titles = merged_df.nlargest(3, 'user_score')['title'].tolist() if not merged_df.empty else []
+    bottom_titles = merged_df.nsmallest(3, 'user_score')['title'].tolist() if not merged_df.empty else []
 
     context_data = {
         'top_genre': top_genre,
