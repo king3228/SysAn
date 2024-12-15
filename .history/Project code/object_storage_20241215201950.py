@@ -91,7 +91,7 @@ def load_user_anime_list(chat_id, user_anime_list):
                 'type': 'Anime',
                 'episode_duration': target['episodes'],
                 'episode_count': target['episodes'],
-                'poster_url': target['poster']['main2xUrl']
+                'poster_url': target['poster']['originalUrl']
             }])
             anime_df = pd.concat([anime_df, new_anime], ignore_index=True)
 

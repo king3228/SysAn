@@ -91,7 +91,7 @@ def load_user_anime_list(chat_id, user_anime_list):
                 'type': 'Anime',
                 'episode_duration': target['episodes'],
                 'episode_count': target['episodes'],
-                'poster_url': target['poster']['main2xUrl']
+                'poster_url': target['poster']['originalUrl']
             }])
             anime_df = pd.concat([anime_df, new_anime], ignore_index=True)
 
@@ -137,7 +137,7 @@ def get_context_data(chat_id):
 
     # Использование try-except для обработки потенциальных ошибок в медиане
     try:
-        median_episodes = float(merged_df['episode_count'].dropna().median()) if not merged_df.empty else None
+        median_episodes = merged_df['episode_count'].dropna().median() if not merged_df.empty else None
     except Exception:
         median_episodes = None
 

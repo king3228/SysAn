@@ -91,7 +91,7 @@ def load_user_anime_list(chat_id, user_anime_list):
                 'type': 'Anime',
                 'episode_duration': target['episodes'],
                 'episode_count': target['episodes'],
-                'poster_url': target['poster']['main2xUrl']
+                'poster_url': target['poster']['originalUrl']
             }])
             anime_df = pd.concat([anime_df, new_anime], ignore_index=True)
 
@@ -137,7 +137,7 @@ def get_context_data(chat_id):
 
     # Использование try-except для обработки потенциальных ошибок в медиане
     try:
-        median_episodes = float(merged_df['episode_count'].dropna().median()) if not merged_df.empty else None
+        median_episodes = merged_df['episode_count'].dropna().median() if not merged_df.empty else None
     except Exception:
         median_episodes = None
 
@@ -148,13 +148,8 @@ def get_context_data(chat_id):
         top_titles = []
 
     try:
-        # Отфильтровать DataFrame, исключая оценки равные 0
-        filtered_df = merged_df[merged_df['user_score'] > 0]
-
-        # Нахождение bottom titles, игнорируя тайтлы с нулевой оценкой
-        bottom_titles = filtered_df.nsmallest(3, 'user_score').dropna(subset=['title'])['title'].tolist()
-    except Exception as e:
-        print(f"Error finding bottom_titles: {e}")
+        bottom_titles = merged_df.nsmallest(3, 'user_score').dropna(subset=['title'])['title'].tolist() if not merged_df.empty else []
+    except Exception:
         bottom_titles = []
 
     context_data = {

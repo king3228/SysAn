@@ -54,7 +54,7 @@ def get_user_anime_list(user_shiki_id):
           }
           episodes
           poster {
-            main2xUrl
+            originalUrl
           }
           url
         }
@@ -105,7 +105,7 @@ def get_anime_by_title(title):
           name
         }
         poster {
-          main2xUrl
+          originalUrl
         }
         description
       }
@@ -123,3 +123,4 @@ def get_anime_by_title(title):
 
     print(f"Anime with title '{title}' not found in Shikimori.")
     return None
+

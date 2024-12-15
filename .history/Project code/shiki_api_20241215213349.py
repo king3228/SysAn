@@ -123,3 +123,4 @@ def get_anime_by_title(title):
 
     print(f"Anime with title '{title}' not found in Shikimori.")
     return None
+

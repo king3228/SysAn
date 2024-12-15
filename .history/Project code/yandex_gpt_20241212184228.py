@@ -1,6 +1,5 @@
 import requests
 import os
-import json
 
 YANDEX_GPT_API_KEY = ''  # Убедитесь в корректности API-ключа
 

@@ -8,7 +8,7 @@ BOT_TOKEN = os.environ.get('TMP_TELEGRAM_TOKEN')
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 def send_message(chat_id, text, photo_url=None, command_buttons=None, inline_button_text=None, inline_button_url=None):
-    # Подготовка клавиатуры для команд
+    # Подготовка клавиатуры для команд, если переданы соответствующие параметры
     reply_markup = None
 
     if command_buttons:
@@ -17,7 +17,7 @@ def send_message(chat_id, text, photo_url=None, command_buttons=None, inline_but
     else:
         markup = {}
 
-    # Подготовка встроенной клавиатуры
+    # Подготовка встроенной клавиатуры, если переданы параметры для ссылки
     if inline_button_text and inline_button_url:
         inline_markup = {
             "inline_keyboard": [[{"text": inline_button_text, "url": inline_button_url}]]
@@ -30,13 +30,7 @@ def send_message(chat_id, text, photo_url=None, command_buttons=None, inline_but
     if photo_url:
         url = f"{BASE_URL}/sendPhoto"
         data = {'chat_id': chat_id, 'caption': text, 'reply_markup': json.dumps(reply_markup) if reply_markup else None}
-        try:
-            photo_content = requests.get(photo_url).content
-        except requests.RequestException as e:
-            print(f"Error fetching photo: {e}")
-            return {'success': False}
-
-        files = {'photo': photo_content}
+        files = {'photo': requests.get(photo_url).content}
     else:
         url = f"{BASE_URL}/sendMessage"
         data = {'chat_id': chat_id, 'text': text, 'reply_markup': json.dumps(reply_markup) if reply_markup else None}
@@ -44,14 +38,11 @@ def send_message(chat_id, text, photo_url=None, command_buttons=None, inline_but
 
     try:
         response = requests.post(url, data=data, files=files)
-        response.raise_for_status()
+        response.raise_for_status()  # Проверка наличия HTTP ошибок
     except requests.RequestException as e:
         print(f"Error sending message: {e}")
-        if isinstance(e, requests.HTTPError) and response.status_code == 400:
-            return {'success': False, 'status_code': 400}
-        return {'success': False}
 
-    return {'success': True, 'response': response.json()}
+    return response.json()
 
     
 def handler(event, context):

@@ -2,7 +2,7 @@ import time
 from datetime import datetime, timezone
 from object_storage import *
 from shiki_api import get_user_anime_list, get_anime_by_title
-from yandex_gpt_alpha import format_recommendations, get_anime_recommendations
+from yandex_gpt import send_request_to_gpt, extract_recommendations_from_response
 from tg_controller import send_message
 
 user_state = {}
