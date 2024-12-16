@@ -50,11 +50,12 @@ def handle_user_input_for_recommendations(chat_id, user_query):
 
         user_info = check_user_exists(chat_id)
         if user_info is not None:
-            last_updated = datetime.fromisoformat(user_info.loc[0, 'last_updated'])
-            shikimori_username = user_info.loc[0, 'shikimori_username']
+            last_updated = user_info[0].get('last_updated')
+            shikimori_username = user_info[0].get('shikimori_username')
+            if isinstance(shikimori_username, bytes):
+                shikimori_username = shikimori_username.decode('utf-8')
             current_time = datetime.now(timezone.utc)
             seconds_since_epoch = int(current_time.timestamp())
-            last_updated = int(last_updated.timestamp())
             if (seconds_since_epoch - last_updated) > 86400:
                 if shikimori_username:
                     user_anime_list = get_user_anime_list(shikimori_username)
