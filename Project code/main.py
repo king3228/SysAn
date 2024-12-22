@@ -4,7 +4,7 @@ from object_storage import *
 from shiki_api import get_user_anime_list, get_anime_by_title
 from yandex_gpt_alpha import format_recommendations, get_anime_recommendations
 from tg_controller import send_message
-
+from Auth import get_shikimori_user_id
 user_state = {}
 
 def handle_start_command(chat_id):
@@ -38,7 +38,7 @@ def handle_start_command(chat_id):
 
 def handle_add_shiki_command(chat_id):
     user_state[chat_id] = 'awaiting_id'
-    send_message(chat_id, text="Пожалуйста, отправьте свой идентификатор профиля Shikimori.")
+    send_message(chat_id, text="Пожалуйста, отправьте свой ник Shikimori.")
 
 def handle_get_recommendations_request(chat_id):
     user_state[chat_id] = 'awaiting_recommendation_prompt'
@@ -103,7 +103,7 @@ def handle_user_input_for_recommendations(chat_id, user_query):
 def handle_message(chat_id, text):
     if chat_id in user_state:
         if user_state[chat_id] == 'awaiting_id':
-            add_shiki_to_user(chat_id, text)
+            add_shiki_to_user(chat_id, get_shikimori_user_id(text))
             send_message(chat_id, "Ваш аккаунт Shikimori успешно привязан!")
             del user_state[chat_id]
         elif user_state[chat_id] == 'awaiting_recommendation_prompt':
