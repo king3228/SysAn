@@ -9,7 +9,7 @@ def parse_event(event):
     """
     try:
         # Получаем тело запроса (если это POST/PUT)
-        body = json.loads(event.get('body', '{}')) if event.get('body') else {}
+        body = json.loads(event.get('body', '{}')) if 'body' in event else {}
 
         # Извлекаем путь и параметры из event
         query_params = event.get('queryStringParameters', {}) or {}

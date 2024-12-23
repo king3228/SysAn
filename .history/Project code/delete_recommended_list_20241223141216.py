@@ -9,7 +9,7 @@ def parse_event(event):
     """
     try:
         # Получаем тело запроса (если это POST/PUT)
-        body = json.loads(event.get('body', '{}')) if event.get('body') else {}
+        body = json.loads(event.get('body', '{}')) if 'body' in event else {}
 
         # Извлекаем путь и параметры из event
         query_params = event.get('queryStringParameters', {}) or {}
@@ -63,9 +63,10 @@ def is_admin_user(chat_id):
     """
     return chat_id in ADMINS
 
-def update_recommended_list(chat_id, list_id, name=None, description=None, anime_ids=None):
+
+def delete_recommended_list(chat_id, list_id):
     """
-    Обновление рекомендованного списка.
+    Удаление рекомендованного списка.
     """
 
     # Проверяем права администратора
@@ -80,32 +81,18 @@ def update_recommended_list(chat_id, list_id, name=None, description=None, anime
     if list_id not in recommended_lists['list_id'].values:
         return error_response(f"Список с ID '{list_id}' не найден.", code=404)
 
-    # Обновляем данные
-    if name:
-        recommended_lists.loc[recommended_lists['list_id'] == list_id, 'name'] = name
-    if description:
-        recommended_lists.loc[recommended_lists['list_id'] == list_id, 'description'] = description
-
-    recommended_lists.loc[recommended_lists['list_id'] == list_id, 'updated_at'] = get_current_timestamp().isoformat()
-
-    # Обновляем элементы списка
-    if anime_ids is not None:
-        # Удаляем старые элементы и добавляем новые
-        recommended_list_items = recommended_list_items[recommended_list_items['list_id'] != list_id]
-        new_items = pd.DataFrame([{
-            'list_id': list_id,
-            'anime_id': anime_id
-        } for anime_id in anime_ids])
-        recommended_list_items = pd.concat([recommended_list_items, new_items], ignore_index=True)
+    # Удаляем список и связанные элементы
+    recommended_lists = recommended_lists[recommended_lists['list_id'] != list_id]
+    recommended_list_items = recommended_list_items[recommended_list_items['list_id'] != list_id]
 
     # Сохраняем изменения
     write_table_to_s3_csv(recommended_lists, 'recommended_lists.csv')
     write_table_to_s3_csv(recommended_list_items, 'recommended_list_items.csv')
 
-    return success_response(message=f"Список с ID '{list_id}' успешно обновлен.")
+    return success_response(message=f"Список с ID '{list_id}' успешно удалён.")
 
 
-def update_list_handler(event, context):
+def delete_list_handler(event, context):
     parsed = parse_event(event)
     if not parsed:
         return {
@@ -116,7 +103,6 @@ def update_list_handler(event, context):
             })
         }
 
-    # Извлекаем параметры
     path_params = parsed['path_params']
     body = parsed['body']
     list_id = path_params.get('list_id')
@@ -140,14 +126,8 @@ def update_list_handler(event, context):
             })
         }
 
-    # Вызов логики обновления
-    result = update_recommended_list(
-        chat_id=auth_key,
-        list_id=list_id,
-        name=body.get('name'),
-        description=body.get('description'),
-        anime_ids=body.get('anime_ids', [])
-    )
+    # Вызов логики удаления
+    result = delete_recommended_list(auth_key, list_id)
 
     return {
         "statusCode": result.pop('code', 200),

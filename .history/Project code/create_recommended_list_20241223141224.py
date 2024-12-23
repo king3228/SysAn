@@ -9,7 +9,7 @@ def parse_event(event):
     """
     try:
         # Получаем тело запроса (если это POST/PUT)
-        body = json.loads(event.get('body', '{}')) if event.get('body') else {}
+        body = json.loads(event.get('body', '{}')) if 'body' in event else {}
 
         # Извлекаем путь и параметры из event
         query_params = event.get('queryStringParameters', {}) or {}
@@ -63,9 +63,9 @@ def is_admin_user(chat_id):
     """
     return chat_id in ADMINS
 
-def update_recommended_list(chat_id, list_id, name=None, description=None, anime_ids=None):
+def create_recommended_list(chat_id, name, description, list_type, genre, year, anime_ids, created_by):
     """
-    Обновление рекомендованного списка.
+    Создание нового рекомендованного списка.
     """
 
     # Проверяем права администратора
@@ -76,37 +76,46 @@ def update_recommended_list(chat_id, list_id, name=None, description=None, anime
     recommended_lists = read_table_from_s3_csv('recommended_lists.csv')
     recommended_list_items = read_table_from_s3_csv('recommended_list_items.csv')
 
-    # Проверяем существование списка
-    if list_id not in recommended_lists['list_id'].values:
-        return error_response(f"Список с ID '{list_id}' не найден.", code=404)
+    # Проверяем дублирование имени
+    if not recommended_lists.empty and (recommended_lists['name'] == name).any():
+        return error_response(f"Список с названием '{name}' уже существует.", code=409)
 
-    # Обновляем данные
-    if name:
-        recommended_lists.loc[recommended_lists['list_id'] == list_id, 'name'] = name
-    if description:
-        recommended_lists.loc[recommended_lists['list_id'] == list_id, 'description'] = description
+    # Создаем новый список
+    list_id = generate_id()
+    new_list = pd.DataFrame([{
+        'list_id': list_id,
+        'name': name,
+        'description': description,
+        'type': list_type,
+        'genre': genre,
+        'year': year,
+        'created_by': created_by,
+        'created_at': get_current_timestamp().isoformat(),
+        'updated_at': get_current_timestamp().isoformat()
+    }])
+    recommended_lists = pd.concat([recommended_lists, new_list], ignore_index=True)
 
-    recommended_lists.loc[recommended_lists['list_id'] == list_id, 'updated_at'] = get_current_timestamp().isoformat()
-
-    # Обновляем элементы списка
-    if anime_ids is not None:
-        # Удаляем старые элементы и добавляем новые
-        recommended_list_items = recommended_list_items[recommended_list_items['list_id'] != list_id]
-        new_items = pd.DataFrame([{
-            'list_id': list_id,
-            'anime_id': anime_id
-        } for anime_id in anime_ids])
-        recommended_list_items = pd.concat([recommended_list_items, new_items], ignore_index=True)
+    # Добавляем элементы списка
+    new_items = pd.DataFrame([{
+        'list_id': list_id,
+        'anime_id': anime_id
+    } for anime_id in anime_ids])
+    recommended_list_items = pd.concat([recommended_list_items, new_items], ignore_index=True)
 
     # Сохраняем изменения
     write_table_to_s3_csv(recommended_lists, 'recommended_lists.csv')
     write_table_to_s3_csv(recommended_list_items, 'recommended_list_items.csv')
 
-    return success_response(message=f"Список с ID '{list_id}' успешно обновлен.")
+    return success_response(
+        message=f"Список '{name}' успешно создан.",
+        data={"list_id": list_id},
+        code=201
+    )
 
-
-def update_list_handler(event, context):
+def create_list_handler(event, context):
     parsed = parse_event(event)
+
+    # Проверяем, удалось ли корректно парсить event
     if not parsed:
         return {
             "statusCode": 400,
@@ -116,10 +125,8 @@ def update_list_handler(event, context):
             })
         }
 
-    # Извлекаем параметры
-    path_params = parsed['path_params']
+    # Достаём данные из тела запроса
     body = parsed['body']
-    list_id = path_params.get('list_id')
     auth_key = body.get('auth_key')
 
     if not auth_key:
@@ -131,25 +138,19 @@ def update_list_handler(event, context):
             })
         }
 
-    if not list_id:
-        return {
-            "statusCode": 400,
-            "body": json.dumps({
-                "status": "error",
-                "message": "ID списка не указан."
-            })
-        }
-
-    # Вызов логики обновления
-    result = update_recommended_list(
-        chat_id=auth_key,
-        list_id=list_id,
+    # Вызываем логику создания списка
+    result = create_recommended_list(
+        chat_id=auth_key,  # Аутентификация
         name=body.get('name'),
         description=body.get('description'),
-        anime_ids=body.get('anime_ids', [])
+        list_type=body.get('type'),
+        genre=body.get('genre'),
+        year=body.get('year'),
+        anime_ids=body.get('anime_ids', []),
+        created_by=body.get('created_by')
     )
 
     return {
-        "statusCode": result.pop('code', 200),
+        "statusCode": result.pop('code', 200),  # Код ответа из логики
         "body": json.dumps(result, ensure_ascii=False)
     }

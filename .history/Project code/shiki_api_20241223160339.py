@@ -134,12 +134,9 @@ def get_anime_by_id(anime_id):
     :return: Словарь с названием и ссылкой на аниме
     """
     url = f"{SHIKIMORI_BASE_URL}/animes/{anime_id}"  # URL для получения данных об аниме по ID
-    headers = {
-        'User-Agent': 'Api Test'
-    }
 
     try:
-        response = requests.get(url, headers=headers)  # Выполняем GET-запрос
+        response = requests.get(url)  # Выполняем GET-запрос
         response.raise_for_status()  # Проверяем на наличие ошибок HTTP
         anime_data = response.json()  # Парсим JSON-ответ
 

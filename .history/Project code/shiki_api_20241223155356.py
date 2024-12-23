@@ -5,8 +5,6 @@ import json
 # URL для GraphQL API Shikimori
 GRAPHQL_ENDPOINT = 'https://shikimori.one/api/graphql'
 
-SHIKIMORI_BASE_URL = "https://shikimori.me/api"
-
 # Заголовки запроса с User-Agent: Api Test
 HEADERS = {
     "Accept-Encoding": "gzip, deflate, br",
@@ -128,28 +126,32 @@ def get_anime_by_title(title):
 
 def get_anime_by_id(anime_id):
     """
-    Получает информацию об аниме по его ID через REST API Shikimori.
-    Требуемые данные: Название аниме (name) и ссылка на страницу (url).
-    :param anime_id: ID аниме
-    :return: Словарь с названием и ссылкой на аниме
+    Получает название и ссылку на аниме по его ID через GraphQL-запрос.
     """
-    url = f"{SHIKIMORI_BASE_URL}/animes/{anime_id}"  # URL для получения данных об аниме по ID
-    headers = {
-        'User-Agent': 'Api Test'
+    query = """
+    query($id: Int!) {
+      anime(id: $id) {
+        name
+        url
+      }
+    }
+    """
+    variables = {
+        'ids': anime_id,
+        'limit': 1
     }
 
-    try:
-        response = requests.get(url, headers=headers)  # Выполняем GET-запрос
-        response.raise_for_status()  # Проверяем на наличие ошибок HTTP
-        anime_data = response.json()  # Парсим JSON-ответ
+    response = graphql_request(query, variables)
 
-        # Формируем данные с названием и ссылкой
+    if response and 'data' in response and response['data']['anime']:
+        # Возвращаем только необходимые данные
+        anime_data = response['data']['anime']
         return {
             "title": anime_data.get("name", "NaN"),
             "url": f"https://shikimori.me{anime_data.get('url', '')}"
         }
-    except requests.exceptions.RequestException as e:
-        print(f"Ошибка при запросе аниме по ID: {anime_id}. {e}")
+    else:
+        print(f"Anime with ID '{anime_id}' not found in Shikimori.")
         return {
             "title": "NaN",
             "url": None
