@@ -7,7 +7,7 @@ from urllib3.util.retry import Retry
 # URL для GraphQL API Shikimori
 GRAPHQL_ENDPOINT = 'https://shikimori.one/api/graphql'
 
-SHIKIMORI_BASE_URL = "https://shikimori.one/api"
+SHIKIMORI_BASE_URL = "https://shikimori.me/api"
 
 # Заголовки запроса с User-Agent: Api Test
 HEADERS = {

@@ -1,13 +1,11 @@
 import requests
 import time
 import json
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 # URL для GraphQL API Shikimori
 GRAPHQL_ENDPOINT = 'https://shikimori.one/api/graphql'
 
-SHIKIMORI_BASE_URL = "https://shikimori.one/api"
+SHIKIMORI_BASE_URL = "https://shikimori.me/api"
 
 # Заголовки запроса с User-Agent: Api Test
 HEADERS = {
@@ -128,30 +126,25 @@ def get_anime_by_title(title):
     print(f"Anime with title '{title}' not found in Shikimori.")
     return None
 
-def get_anime_by_id(anime_id, pause_between_requests=1):
+def get_anime_by_id(anime_id):
     """
     Получает информацию об аниме по его ID через REST API Shikimori.
+    Требуемые данные: Название аниме (name) и ссылка на страницу (url).
+    :param anime_id: ID аниме
+    :return: Словарь с названием и ссылкой на аниме
     """
-    url = f"{SHIKIMORI_BASE_URL}/animes/{anime_id}"
-
-    # Настройка повторных запросов при ошибках сети
-    session = requests.Session()
-    retries = Retry(
-        total=5,  # Количество повторных попыток
-        backoff_factor=1,  # Задержка между попытками
-        status_forcelist=[502, 503, 504]  # Ошибки, которые требуют повторной попытки
-    )
-    adapter = HTTPAdapter(max_retries=retries)
-    session.mount("https://", adapter)
+    url = f"{SHIKIMORI_BASE_URL}/animes/{anime_id}"  # URL для получения данных об аниме по ID
+    headers = {
+        'User-Agent': 'Api Test'
+    }
 
     try:
-        response = session.get(url, headers=HEADERS, timeout=10)  # Подключаем таймаут 10 секунд
-        response.raise_for_status()  # Проверяем HTTP-ошибки
-        anime_data = response.json()
+        time.sleep(0.01)
+        response = requests.get(url, headers=HEADERS)  # Выполняем GET-запрос
+        response.raise_for_status()  # Проверяем на наличие ошибок HTTP
+        anime_data = response.json()  # Парсим JSON-ответ
 
-        # Добавляем паузу между запросами
-        time.sleep(pause_between_requests)
-
+        # Формируем данные с названием и ссылкой
         return {
             "title": anime_data.get("name", "NaN"),
             "url": f"https://shikimori.me{anime_data.get('url', '')}"
