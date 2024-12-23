@@ -1,13 +1,9 @@
 import requests
 import time
 import json
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 # URL для GraphQL API Shikimori
 GRAPHQL_ENDPOINT = 'https://shikimori.one/api/graphql'
-
-SHIKIMORI_BASE_URL = "https://shikimori.one/api"
 
 # Заголовки запроса с User-Agent: Api Test
 HEADERS = {
@@ -128,36 +124,34 @@ def get_anime_by_title(title):
     print(f"Anime with title '{title}' not found in Shikimori.")
     return None
 
-def get_anime_by_id(anime_id, pause_between_requests=1):
+def get_anime_by_id(anime_id):
     """
-    Получает информацию об аниме по его ID через REST API Shikimori.
+    Получает название и ссылку на аниме по его ID через GraphQL-запрос.
     """
-    url = f"{SHIKIMORI_BASE_URL}/animes/{anime_id}"
+    query = """
+    query($id: Int!) {
+      anime(id: $id) {
+        name
+        url
+      }
+    }
+    """
+    variables = {
+        'search': id,
+        'limit': 1
+    }
 
-    # Настройка повторных запросов при ошибках сети
-    session = requests.Session()
-    retries = Retry(
-        total=5,  # Количество повторных попыток
-        backoff_factor=1,  # Задержка между попытками
-        status_forcelist=[502, 503, 504]  # Ошибки, которые требуют повторной попытки
-    )
-    adapter = HTTPAdapter(max_retries=retries)
-    session.mount("https://", adapter)
+    response = graphql_request(query, variables)
 
-    try:
-        response = session.get(url, headers=HEADERS, timeout=10)  # Подключаем таймаут 10 секунд
-        response.raise_for_status()  # Проверяем HTTP-ошибки
-        anime_data = response.json()
-
-        # Добавляем паузу между запросами
-        time.sleep(pause_between_requests)
-
+    if response and 'data' in response and response['data']['anime']:
+        # Возвращаем только необходимые данные
+        anime_data = response['data']['anime']
         return {
             "title": anime_data.get("name", "NaN"),
             "url": f"https://shikimori.me{anime_data.get('url', '')}"
         }
-    except requests.exceptions.RequestException as e:
-        print(f"Ошибка при запросе аниме по ID: {anime_id}. {e}")
+    else:
+        print(f"Anime with ID '{anime_id}' not found in Shikimori.")
         return {
             "title": "NaN",
             "url": None
