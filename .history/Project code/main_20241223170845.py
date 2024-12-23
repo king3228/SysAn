@@ -125,8 +125,14 @@ def handle_user_input_for_recommendations(chat_id, user_query):
                 else:
                     send_message(chat_id, f"{title}\nИзвините, технические неполадки.")
 
+from recommendations_handlers import (
+    handle_get_all_lists,
+    handle_get_single_list,
+    handle_compare_list
+)
+
 def handle_message(chat_id, text):
-    # Проверяем состояние пользователя
+    # Проверяем состояние пользователя (например, ввод ID)
     if chat_id in user_state:
         if user_state[chat_id] == 'awaiting_id':
             add_shiki_to_user(chat_id, text)
@@ -145,20 +151,23 @@ def handle_message(chat_id, text):
     elif text.startswith('/get_recd'):
         handle_get_recommendations_request(chat_id)
     elif text.startswith('/get_all_lists'):
+        # Обработка команды для получения всех списков
         handle_get_all_lists(chat_id)
     elif text.startswith('/get_single_list'):
-        # Извлекаем текст после команды как название списка
-        list_name = text[len('/get_single_list '):].strip()
-        if not list_name:
-            send_message(chat_id, "Пожалуйста, укажите название списка после команды. Например, /get_single_list Аниме для новичков.")
+        # Проверяем, передан ли ID списка после команды
+        parts = text.split(' ')
+        if len(parts) < 2:
+            send_message(chat_id, "Пожалуйста, укажите ID списка после команды. Например, /get_single_list 1")
         else:
-            handle_get_single_list(chat_id, list_name)
+            list_id = parts[1]
+            handle_get_single_list(chat_id, list_id)
     elif text.startswith('/compare_list'):
-        # Извлекаем текст после команды как название списка
-        list_name = text[len('/compare_list '):].strip()
-        if not list_name:
-            send_message(chat_id, "Пожалуйста, укажите название списка после команды. Например, /compare_list Аниме для новичков.")
+        # Проверяем, передан ли ID списка после команды
+        parts = text.split(' ')
+        if len(parts) < 2:
+            send_message(chat_id, "Пожалуйста, укажите ID списка после команды. Например, /compare_list 1")
         else:
-            handle_compare_list(chat_id, list_name)
+            list_id = parts[1]
+            handle_compare_list(chat_id, list_id)
     else:
-        send_message(chat_id, "Неизвестная команда. Попробуйте /start, /add_shiki, /get_all_lists, /get_single_list <название>, или /compare_list <название>.")
+        send_message(chat_id, "Неизвестная команда. Попробуйте /start, /add_shiki, /get_all_lists, /get_single_list <id>, или /compare_list <id>.")
